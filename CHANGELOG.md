@@ -8,9 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 
+## [0.1.0] - 2018-08-07
+### Added
+- Collected utils and polyfills, mainly from https://codepen.io/Sphinxxxx/pen/VejGLv.
+
+
 ## 0.0.0 - 2018-08-06
 ### Added
 - Initial boilerplate code.
 
 
-[Unreleased]: https://github.com/Sphinxxxx/abo-utils/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/Sphinxxxx/abo-utils/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Sphinxxxx/abo-utils/compare/v0.0.0...v0.1.0
