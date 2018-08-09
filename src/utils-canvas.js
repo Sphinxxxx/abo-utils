@@ -15,7 +15,7 @@ import * as geom from './utils-geom';
  * Those corner coordinates ([x, y]) can be given in any order,
  * just make sure s1 corresponds to d1 and so forth.
  */
-function drawImageTriangle(img, ctx, s1, s2, s3, d1, d2, d3) {
+function drawImageTriangle(img, ctx, s1, s2, s3, d1, d2, d3, expand) {
 
     /**
      * Solves a system of linear equations.
@@ -35,6 +35,17 @@ function drawImageTriangle(img, ctx, s1, s2, s3, d1, d2, d3) {
         var c = t1 - (r1 * a) - (s1 * b);
     
         return [a, b, c];
+    }
+    
+    if(expand) {
+        //Overlap the destination areas a little
+        //to avoid hairline cracks when drawing mulitiple connected triangles.
+        const destOverlap = .3,
+              destArea = geom.triangleArea(d1, d2, d3),
+              srcArea = geom.triangleArea(s1, s2, s3);
+              
+        [d1, d2, d3] = geom.expandTriangle(d1, d2, d3,  destOverlap),
+        [s1, s2, s3] = geom.expandTriangle(s1, s2, s3,  destOverlap * srcArea/destArea);
     }
 
     //I assume the "m" is for "magic"...
@@ -57,8 +68,8 @@ function drawImageTriangle(img, ctx, s1, s2, s3, d1, d2, d3) {
     ctx.restore();
     
     
-    //* DEBUG - https://en.wikipedia.org/wiki/Incircle_and_excircles_of_a_triangle
-    const incircle = geom.calcIncircle(d1, d2, d3),
+    /* DEBUG - https://en.wikipedia.org/wiki/Incircle_and_excircles_of_a_triangle
+    const incircle = geom.triangleIncircle(d1, d2, d3),
           c = incircle.c;
     //console.log(incircle);
     ctx.beginPath();

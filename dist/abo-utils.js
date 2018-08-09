@@ -1,5 +1,5 @@
 /*!
- * abo-utils v0.1.0
+ * abo-utils v0.2.0
  * https://github.com/Sphinxxxx/abo-utils
  *
  * Copyright 2018 Andreas Borgen
@@ -23,34 +23,80 @@
 
   });
 
-  function calcAngle(p0, p1, p2) {
+  function clamp(x, min, max) {
+      return Math.max(min, Math.min(x, max));
+  }
 
+  function lerp(v0, v1, t) {
+      if (Array.isArray(v0)) {
+          return v0.map(function (v, i) {
+              return lerp(v, v1[i], t);
+          });
+      }
+      return (1 - t) * v0 + t * v1;
+  }
+
+  var utilsMath = Object.freeze({
+    clamp: clamp,
+    lerp: lerp
+  });
+
+  function distance(p1, p2) {
+      var dx = p2[0] - p1[0],
+          dy = p2[1] - p1[1];
+      return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function rotatePoint(p, radians) {
+      var x = p[0],
+          y = p[1],
+          cos = Math.cos(radians),
+          sin = Math.sin(radians);
+
+      return [cos * x - sin * y, sin * x + cos * y];
+  }
+
+  function angleBetween(p1, p2, p3) {
       function squared(a) {
           return a * a;
       }
 
-      var a = squared(p1[0] - p0[0]) + squared(p1[1] - p0[1]),
-          b = squared(p1[0] - p2[0]) + squared(p1[1] - p2[1]),
-          c = squared(p2[0] - p0[0]) + squared(p2[1] - p0[1]);
+      var radians = void 0;
 
-      var angle = Math.acos((a + b - c) / Math.sqrt(4 * a * b));
-      return angle;
-  }
-
-  function calcIncircle(A, B, C) {
-      function lineLen(p1, p2) {
+      if (!p3) {
           var dx = p2[0] - p1[0],
               dy = p2[1] - p1[1];
-          return Math.sqrt(dx * dx + dy * dy);
+
+          radians = Math.atan2(dy, dx);
       }
 
-      var a = lineLen(B, C),
-          b = lineLen(C, A),
-          c = lineLen(A, B),
+      else {
+
+              var a = squared(p2[0] - p1[0]) + squared(p2[1] - p1[1]),
+                  b = squared(p2[0] - p3[0]) + squared(p2[1] - p3[1]),
+                  c = squared(p3[0] - p1[0]) + squared(p3[1] - p1[1]);
+
+              radians = Math.acos((a + b - c) / Math.sqrt(4 * a * b));
+          }
+
+      return radians;
+  }
+
+  function triangleArea(A, B, C) {
+
+      var area = Math.abs((B[0] - A[0]) * (C[1] - A[1]) - (C[0] - A[0]) * (B[1] - A[1])) / 2;
+
+      return area;
+  }
+
+  function triangleIncircle(A, B, C) {
+      var a = distance(B, C),
+          b = distance(C, A),
+          c = distance(A, B),
           p = a + b + c,
           s = p / 2;
 
-      var area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+      var area = triangleArea(A, B, C);
 
       var r = area / s,
           cx = (a * A[0] + b * B[0] + c * C[0]) / p,
@@ -62,7 +108,7 @@
   }
 
   function expandTriangle(A, B, C, amount) {
-      var incircle = calcIncircle(A, B, C),
+      var incircle = triangleIncircle(A, B, C),
           c = incircle.c,
           factor = (incircle.r + amount) / incircle.r;
 
@@ -81,8 +127,11 @@
   }
 
   var utilsGeom = Object.freeze({
-    calcAngle: calcAngle,
-    calcIncircle: calcIncircle,
+    distance: distance,
+    rotatePoint: rotatePoint,
+    angleBetween: angleBetween,
+    triangleArea: triangleArea,
+    triangleIncircle: triangleIncircle,
     expandTriangle: expandTriangle
   });
 
@@ -167,12 +216,45 @@
       });
   }
 
+  function animate(durationMS, callback, alternate) {
+      var startTime = void 0,
+          cancelled = void 0;
+      function anim(t) {
+          if (!startTime) {
+              startTime = t;
+          }
+
+          var totalProgress = (t - startTime) / durationMS;
+
+          var relProgress = totalProgress % 1;
+          if (alternate) {
+              var iteration = Math.trunc(totalProgress);
+              if (iteration % 2) {
+                  relProgress = 1 - relProgress;
+              }
+          }
+
+          callback(relProgress, totalProgress);
+          if (!cancelled) {
+              requestAnimationFrame(anim);
+          }
+      }
+      requestAnimationFrame(anim);
+
+      return {
+          cancel: function cancel() {
+              cancelled = true;
+          }
+      };
+  }
+
   var utilsDom = Object.freeze({
     $$: $$,
     $$1: $$1,
     createElement: createElement,
     relativeMousePos: relativeMousePos,
-    live: live
+    live: live,
+    animate: animate
   });
 
   var classCallCheck = function (instance, Constructor) {
@@ -199,7 +281,45 @@
     };
   }();
 
-  function drawImageTriangle(img, ctx, s1, s2, s3, d1, d2, d3) {
+  var slicedToArray = function () {
+    function sliceIterator(arr, i) {
+      var _arr = [];
+      var _n = true;
+      var _d = false;
+      var _e = undefined;
+
+      try {
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);
+
+          if (i && _arr.length === i) break;
+        }
+      } catch (err) {
+        _d = true;
+        _e = err;
+      } finally {
+        try {
+          if (!_n && _i["return"]) _i["return"]();
+        } finally {
+          if (_d) throw _e;
+        }
+      }
+
+      return _arr;
+    }
+
+    return function (arr, i) {
+      if (Array.isArray(arr)) {
+        return arr;
+      } else if (Symbol.iterator in Object(arr)) {
+        return sliceIterator(arr, i);
+      } else {
+        throw new TypeError("Invalid attempt to destructure non-iterable instance");
+      }
+    };
+  }();
+
+  function drawImageTriangle(img, ctx, s1, s2, s3, d1, d2, d3, expand) {
 
       function linearSolution(r1, s1, t1, r2, s2, t2, r3, s3, t3) {
           var a = ((t2 - t3) * (s1 - s2) - (t1 - t2) * (s2 - s3)) / ((r2 - r3) * (s1 - s2) - (r1 - r2) * (s2 - s3));
@@ -207,6 +327,16 @@
           var c = t1 - r1 * a - s1 * b;
 
           return [a, b, c];
+      }
+
+      if (expand) {
+          var _geom$expandTriangle, _geom$expandTriangle2, _geom$expandTriangle3, _geom$expandTriangle4;
+
+          var destOverlap = .3,
+              destArea = triangleArea(d1, d2, d3),
+              srcArea = triangleArea(s1, s2, s3);
+
+          (_geom$expandTriangle = expandTriangle(d1, d2, d3, destOverlap), _geom$expandTriangle2 = slicedToArray(_geom$expandTriangle, 3), d1 = _geom$expandTriangle2[0], d2 = _geom$expandTriangle2[1], d3 = _geom$expandTriangle2[2], _geom$expandTriangle), (_geom$expandTriangle3 = expandTriangle(s1, s2, s3, destOverlap * srcArea / destArea), _geom$expandTriangle4 = slicedToArray(_geom$expandTriangle3, 3), s1 = _geom$expandTriangle4[0], s2 = _geom$expandTriangle4[1], s3 = _geom$expandTriangle4[2], _geom$expandTriangle3);
       }
 
       var xm = linearSolution(s1[0], s1[1], d1[0], s2[0], s2[1], d2[0], s3[0], s3[1], d3[0]),
@@ -225,17 +355,6 @@
 
       ctx.restore();
 
-      var incircle = calcIncircle(d1, d2, d3),
-          c = incircle.c;
-      ctx.beginPath();
-      ctx.arc(c[0], c[1], incircle.r, 0, 2 * Math.PI, false);
-      ctx.moveTo(d1[0], d1[1]);
-      ctx.lineTo(d2[0], d2[1]);
-      ctx.lineTo(d3[0], d3[1]);
-      ctx.closePath();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(255,0,0, .4)';
-      ctx.stroke();
   }
 
 
@@ -444,6 +563,7 @@
 
 
   exports.Polys = utilsPolys;
+  exports.Math = utilsMath;
   exports.Geom = utilsGeom;
   exports.DOM = utilsDom;
   exports.Canvas = utilsCanvas;

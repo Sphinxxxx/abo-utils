@@ -2,10 +2,56 @@
 <html>
     <head>
         <script src="../dist/abo-utils.js"></script>
+        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.3/vue.js"></script>
+        <script src="https://unpkg.com/drag-tracker@1"></script>
+        <style>
+            body {
+                font-family: sans-serif;
+            }
+
+            svg {
+                background: white;
+                outline: 3px dashed #aaa;
+            }
+            svg .connector {
+                stroke: dodgerblue;
+                stroke-width: 2;
+                stroke-dasharray: 2;
+            }
+            svg [data-draggable] {
+                stroke: tomato;
+                stroke-width: 3;
+                stroke-dasharray: 6 4;
+                fill: transparent;
+                cursor: move;
+            }
+            svg .resizer {
+                stroke: #aaa;
+            }
+        </style>
     </head>
     <body>
+        
+        <section id="app">
+            <svg :width="svg.size[0]" :height="svg.size[1]">
+                <drag-node class="resizer" v-model="svg.size" r="20"></drag-node>
+                
+                <connector :start="svg.p1" :end="svg.p2" />
+                <connector :start="svg.p2" :end="svg.p3" />
+                <drag-node v-model="svg.p1" ></drag-node>
+                <drag-node v-model="svg.p2" ></drag-node>
+                <drag-node v-model="svg.p3" ></drag-node>
+                
+                <text :x="svg.p1[0] + 20" :y="svg.p1[1] + 10">{{ getAngle(svg.p1, svg.p2) }}</text>
+                <text :x="svg.p2[0] + 20" :y="svg.p2[1] + 10">{{ getAngle(svg.p1, svg.p2, svg.p3) }}</text>
+                <!--text :x="svg.p2[0] + 20" :y="svg.p2[1] + 10">{{ getAngle(svg.p2, svg.p3) - getAngle(svg.p1, svg.p2) }}</text-->
+            </svg>
+        </section>
+
         <script>
             ABOUtils.DOM.createElement('h2#test.bada.bing', document.body).textContent = 'Hello world!';
         </script>
+        <script src="test-geom.js"></script>
     </body>
 </html>

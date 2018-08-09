@@ -1,30 +1,85 @@
-//Center point is p1; angle returned in radians
-//  Optimized:
-//  http://phrogz.net/angle-between-three-points
-function calcAngle(p0, p1, p2) {
+function distance(p1, p2) {
+    const dx = p2[0] - p1[0],
+          dy = p2[1] - p1[1];
+    return Math.sqrt(dx*dx + dy*dy);
+}
 
+
+//https://stackoverflow.com/questions/2259476/rotating-a-point-about-another-point-2d
+function rotatePoint(p, radians) {
+    const x = p[0],
+          y = p[1],
+          cos = Math.cos(radians),
+          sin = Math.sin(radians);
+    
+    return [cos*x - sin*y, sin*x + cos*y];
+}
+
+
+//Angle (in radians) between two or three points
+function angleBetween(p1, p2, p3) {
     function squared(a) { return a*a; }
 
-    var a = squared(p1[0] - p0[0]) + squared(p1[1] - p0[1]),
-        b = squared(p1[0] - p2[0]) + squared(p1[1] - p2[1]),
-        c = squared(p2[0] - p0[0]) + squared(p2[1] - p0[1]);
+    let radians;
     
-    var angle = Math.acos( (a+b-c) / Math.sqrt(4*a*b) );
-    //console.log('findAngle:', p0, '->', p1, '->', p2, ':', angle);
-    return angle;
+    //Angle between two points
+    //https://gist.github.com/conorbuck/2606166
+    if(!p3) {
+        const dx = p2[0] - p1[0],
+              dy = p2[1] - p1[1];
+
+        radians = Math.atan2(dy, dx);
+    }
+
+    //Angle between three points (center point is p2)
+    //http://stackoverflow.com/questions/17763392/how-to-calculate-in-javascript-angle-between-3-points
+    //  Optimized:
+    //  http://phrogz.net/angle-between-three-points
+    else {
+        /*
+        function findAngle(A,B,C) {
+            var AB = Math.sqrt(Math.pow(B.x-A.x,2)+ Math.pow(B.y-A.y,2));    
+            var BC = Math.sqrt(Math.pow(B.x-C.x,2)+ Math.pow(B.y-C.y,2)); 
+            var AC = Math.sqrt(Math.pow(C.x-A.x,2)+ Math.pow(C.y-A.y,2));
+            
+            var angle = Math.acos((BC*BC+AB*AB-AC*AC)/(2*BC*AB));
+            console.log('findAngle:', A, '->', B, '->', C, ':', angle);
+            return angle;
+        }
+        */
+
+        const a = squared(p2[0] - p1[0]) + squared(p2[1] - p1[1]),
+              b = squared(p2[0] - p3[0]) + squared(p2[1] - p3[1]),
+              c = squared(p3[0] - p1[0]) + squared(p3[1] - p1[1]);
+        
+        radians = Math.acos( (a+b-c) / Math.sqrt(4*a*b) );
+    }
+
+    //console.log('findAngle:', p1, '->', p2, '->', p3, ':', radians);
+    return radians;
 }
-/*
-//http://stackoverflow.com/questions/17763392/how-to-calculate-in-javascript-angle-between-3-points
-function findAngle(A,B,C) {
-    var AB = Math.sqrt(Math.pow(B.x-A.x,2)+ Math.pow(B.y-A.y,2));    
-    var BC = Math.sqrt(Math.pow(B.x-C.x,2)+ Math.pow(B.y-C.y,2)); 
-    var AC = Math.sqrt(Math.pow(C.x-A.x,2)+ Math.pow(C.y-A.y,2));
+
+
+function triangleArea(A, B, C) {
+    /*
+    //Heron's formula
+    //Side lengths, perimiter p and semiperimiter s:
+    //https://www.wikihow.com/Calculate-the-Area-of-a-Triangle#Using_Side_Lengths
+    const a = distance(B, C),
+          b = distance(C, A),
+          c = distance(A, B),
+          p = (a + b + c),
+          s = p/2;
     
-    var angle = Math.acos((BC*BC+AB*AB-AC*AC)/(2*BC*AB));
-    console.log('findAngle:', A, '->', B, '->', C, ':', angle);
-    return angle;
+    const area = Math.sqrt(s * (s-a) * (s-b) * (s-c));
+    */
+    
+    //Faster(?) alternative:
+    //http://geomalgorithms.com/a01-_area.html#Modern-Triangles
+    const area = Math.abs( (B[0]-A[0]) * (C[1]-A[1]) - (C[0]-A[0]) * (B[1]-A[1]) )/2;
+
+    return area;
 }
-*/
 
 
 /**
@@ -32,26 +87,15 @@ function findAngle(A,B,C) {
  * https://math.stackexchange.com/questions/1413372/find-cartesian-coordinates-of-the-incenter
  * https://www.mathopenref.com/coordincenter.html
  */
-function calcIncircle(A, B, C) {
-    function lineLen(p1, p2) {
-        const dx = p2[0] - p1[0],
-              dy = p2[1] - p1[1];
-        return Math.sqrt(dx*dx + dy*dy);
-    }
-    
+function triangleIncircle(A, B, C) {
     //Side lengths, perimiter p and semiperimiter s:
-    const a = lineLen(B, C),
-          b = lineLen(C, A),
-          c = lineLen(A, B),
+    const a = distance(B, C),
+          b = distance(C, A),
+          c = distance(A, B),
           p = (a + b + c),
           s = p/2;
     
-    //Heron's formula
-    //https://www.wikihow.com/Calculate-the-Area-of-a-Triangle#Using_Side_Lengths
-    const area = Math.sqrt(s * (s-a) * (s-b) * (s-c));
-    //Faster(?) alternative:
-    //http://geomalgorithms.com/a01-_area.html#Modern-Triangles
-    //const area = Math.abs( (B[0]-A[0])*(C[1]-A[1]) - (C[0]-A[0])*(B[1]-A[1]) )/2;
+    const area = triangleArea(A, B, C);
 
     //Incircle radius r
     //  https://en.wikipedia.org/wiki/Incircle_and_excircles_of_a_triangle#Relation_to_area_of_the_triangle
@@ -72,7 +116,7 @@ function calcIncircle(A, B, C) {
  * https://math.stackexchange.com/questions/17561/how-to-shrink-a-triangle
  */
 function expandTriangle(A, B, C, amount) {
-    const incircle = calcIncircle(A, B, C),
+    const incircle = triangleIncircle(A, B, C),
           c = incircle.c,
           factor = (incircle.r + amount)/(incircle.r);
     
@@ -92,4 +136,4 @@ function expandTriangle(A, B, C, amount) {
 
 
 
-export { calcAngle, calcIncircle, expandTriangle };
+export { distance, rotatePoint, angleBetween, triangleArea, triangleIncircle, expandTriangle };

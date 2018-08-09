@@ -93,5 +93,31 @@ function live(eventType, elementQuerySelector, callback) {
 }
 
 
+function animate(durationMS, callback, alternate) {
+    let startTime, cancelled;
+    function anim(t) {
+        if(!startTime) { startTime = t; }
 
-export { $$, $$1, createElement, relativeMousePos, live };
+        const totalProgress = (t - startTime) / durationMS;
+
+        let relProgress = totalProgress % 1;
+        if(alternate) {
+            const iteration = Math.trunc(totalProgress);
+            if(iteration % 2) {
+                relProgress = 1 - relProgress;
+            }
+        }
+
+        callback(relProgress, totalProgress);
+        if(!cancelled) { requestAnimationFrame(anim); }
+    }
+    requestAnimationFrame(anim);
+    
+    return {
+        cancel() { cancelled = true; }
+    };
+}
+
+
+
+export { $$, $$1, createElement, relativeMousePos, live, animate };
