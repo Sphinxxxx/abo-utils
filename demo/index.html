@@ -50,7 +50,16 @@
         </section>
 
         <script>
+            /*global ABOUtils*/
+            console.clear();
+
             ABOUtils.DOM.createElement('h2#test.bada.bing', document.body).textContent = 'Hello world!';
+            
+            var debug = ABOUtils.Debug;
+            debug.log2(45, [1,2], { a: 'Timed to console!' });
+            debug.logToScreen();
+            debug.log2(45, [1,2], { a: 'Timed to screen!' });
+            console.log(45, [1,2], { a: 'Untimed to screen!' });
         </script>
         <script src="test-geom.js"></script>
     </body>

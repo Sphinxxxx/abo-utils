@@ -4,7 +4,6 @@
 
 (function() {
     "use strict";
-    console.clear();
     
     function rnd(max) {
         return Math.round(Math.random()*max);
