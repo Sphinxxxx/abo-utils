@@ -1,5 +1,5 @@
 /*!
- * abo-utils v0.3.0
+ * abo-utils v0.3.1
  * https://github.com/Sphinxxxx/abo-utils
  *
  * Copyright 2018 Andreas Borgen
@@ -198,6 +198,7 @@
         expandTriangle: expandTriangle
     });
 
+
     function $$(selector, context) {
         context = context || document;
         var elements = context.querySelectorAll(selector);
@@ -260,6 +261,10 @@
         return [x, y];
     }
 
+    function addEvent(target, type, handler) {
+        target.addEventListener(type, handler, false);
+    }
+
     function live(eventType, elementQuerySelector, callback) {
         document.addEventListener(eventType, function (e) {
 
@@ -311,13 +316,82 @@
         };
     }
 
+    function dropFiles(target, callback, options) {
+        options = options || {};
+
+        var autoRevoke = options.autoRevoke !== false;
+        function handleFiles(files) {
+            if (!files) {
+                return;
+            }
+            files = Array.from(files);
+
+            var types = options.acceptedTypes;
+            if (types) {
+                files = files.filter(function (f) {
+                    return types.includes(f.type);
+                });
+            }
+            if (!files.length) {
+                return;
+            }
+
+            var results = files.map(processFile);
+            callback(results);
+        }
+        function processFile(file) {
+            var url = URL.createObjectURL(file);
+            return {
+                url: url,
+                file: file
+            };
+        }
+
+        if (target.nodeName === 'INPUT' && target.type === 'file') {
+            addEvent(target, 'change', function (e) {
+                var input = e.currentTarget;
+                if (input.files) {
+                    handleFiles(input.files);
+                }
+            });
+        } else {
+            addEvent(target, 'dragover', function (e) {
+                return e.preventDefault();
+            });
+            addEvent(target, 'drop', function (e) {
+                e.preventDefault();
+
+                var files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+        }
+    }
+    function singleFileProxy(callback) {
+        function proxy(results) {
+            callback(results[0]);
+        }
+        return proxy;
+    }
+    function dropFile(target, callback) {
+        dropFiles(target, singleFileProxy(callback));
+    }
+    function dropImage(target, callback) {
+        dropFiles(target, singleFileProxy(callback), {
+            acceptedTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/svg', 'image/svg+xml']
+        });
+    }
+
     var utilsDom = Object.freeze({
         $$: $$,
         $$1: $$1,
         createElement: createElement,
         relativeMousePos: relativeMousePos,
+        addEvent: addEvent,
         live: live,
-        animate: animate
+        animate: animate,
+        dropFiles: dropFiles,
+        dropFile: dropFile,
+        dropImage: dropImage
     });
 
     var classCallCheck = function (instance, Constructor) {

@@ -29,6 +29,18 @@
             svg .resizer {
                 stroke: #aaa;
             }
+            
+            #drop-file {
+                width:  400px;
+                height: 400px;
+                background: lightsteelblue;
+            }
+            #drop-file img {
+                width: auto;
+                height: auto;
+                max-width: 100%;
+                max-height: 100%;
+            }
         </style>
     </head>
     <body>
@@ -48,18 +60,29 @@
                 <!--text :x="svg.p2[0] + 20" :y="svg.p2[1] + 10">{{ getAngle(svg.p2, svg.p3) - getAngle(svg.p1, svg.p2) }}</text-->
             </svg>
         </section>
+        
+        <section id="drop-file">
+            <h3>Drop an image</h3>
+            <img />
+        </section>
 
         <script>
             /*global ABOUtils*/
             console.clear();
-
-            ABOUtils.DOM.createElement('h2#test.bada.bing', document.body).textContent = 'Hello world!';
-            
-            var debug = ABOUtils.Debug;
-            debug.log2(45, [1,2], { a: 'Timed to console!' });
-            debug.logToScreen();
-            debug.log2(45, [1,2], { a: 'Timed to screen!' });
-            console.log(45, [1,2], { a: 'Untimed to screen!' });
+            (function() {
+                var ud = ABOUtils.DOM,
+                    $ = ud.$$1;
+    
+                ud.createElement('h2#test.bada.bing', document.body).textContent = 'Hello world!';
+                
+                var debug = ABOUtils.Debug;
+                debug.log2(45, [1,2], { a: 'Timed to console!' });
+                debug.logToScreen();
+                debug.log2(45, [1,2], { a: 'Timed to screen!' });
+                console.log(45, [1,2], { a: 'Untimed to screen!' });
+                
+                ud.dropImage($('#drop-file'), function(drop) { $('#drop-file img').src = drop.url; });
+            })();
         </script>
         <script src="test-geom.js"></script>
     </body>

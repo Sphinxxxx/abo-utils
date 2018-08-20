@@ -1,3 +1,5 @@
+/*global URL*/
+
 
 //https://codepen.io/michaelschofield/post/a-useful-function-for-making-queryselectorall-more-like-jquery
 function $$(selector, context) {
@@ -71,6 +73,11 @@ function relativeMousePos(mouseEvent, element, stayWithin) {
 }
 
 
+function addEvent(target, type, handler) {
+    target.addEventListener(type, handler, false);
+}
+
+
 //Usage:
 //  ABOUtils.DOM.live('click', 'nav .aap a', function(event) { console.log(event); alert(this + ' clicked'); });
 function live(eventType, elementQuerySelector, callback) {
@@ -119,5 +126,82 @@ function animate(durationMS, callback, alternate) {
 }
 
 
+function dropFiles(target, callback, options) {
+    options = options || {};
+    
+    const autoRevoke = (options.autoRevoke !== false);
+    
+    let fileUrls;
+    function handleFiles(files) {
+        if(!files) { return; }
+        files = Array.from(files);
 
-export { $$, $$1, createElement, relativeMousePos, live, animate };
+        const types = options.acceptedTypes;
+        if(types) { files = files.filter(f => types.includes(f.type)); }
+        if(!files.length) { return; }
+
+        if(fileUrls && autoRevoke) {
+            //We probably don't need to hang on to the previous files anymore,
+            //so we release them for performance reasons:
+            fileUrls.forEach(u => URL.revokeObjectURL(u));
+        }
+
+        const results = files.map(processFile);
+        callback(results);
+    }
+    function processFile(file) {
+        //https://developer.mozilla.org/en-US/docs/Web/API/Camera_API/Introduction
+        //http://stackoverflow.com/questions/31742072/filereader-vs-window-url-createobjecturl
+        const url = URL.createObjectURL(file);
+        return {
+            url,
+            file,
+        };
+    }
+    
+    //If we are intercepting a file input field, we use the `change`` event instead of drag/drop events.
+    //That way we fetch the file both on drag/drop (built-in behavior for file input fields), 
+    //and when a file is selected through the old-fashioned "Browse" button.
+    if((target.nodeName === 'INPUT') && (target.type === 'file')) {
+        addEvent(target, 'change', function(e) {
+            const input = e.currentTarget;
+            if (input.files) {
+                handleFiles(input.files);
+            }
+        });
+    }
+    else {
+        //http://html5demos.com/dnd-upload
+        //https://developer.mozilla.org/en-US/docs/Web/Events/drop#Example
+        addEvent(target, 'dragover', e => e.preventDefault());
+        //addEvent(target, 'dragend',  () => false);
+        addEvent(target, 'drop', function (e) {
+            e.preventDefault();
+
+            var files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+    }
+}
+function singleFileProxy(callback) {
+    function proxy(results) {
+        callback(results[0]);
+    }
+    return proxy;
+}
+function dropFile(target, callback) {
+    dropFiles(target, singleFileProxy(callback));
+}
+function dropImage(target, callback) {
+    dropFiles(target, singleFileProxy(callback), {
+        acceptedTypes: ['image/png',
+                        'image/jpeg',
+                        'image/gif',
+                        'image/svg',
+                        'image/svg+xml']
+    });
+}
+
+
+
+export { $$, $$1, createElement, relativeMousePos, addEvent, live, animate, dropFiles, dropFile, dropImage };
