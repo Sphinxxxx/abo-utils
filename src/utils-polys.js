@@ -1,6 +1,9 @@
 /*global Element*/
 /*global HTMLCanvasElement*/
 
+import * as dom from './utils-dom';
+
+
 function ensure(obj, prop, fallback) {
     //if(!obj[prop]) { obj[prop] = fallback; }
     
@@ -68,7 +71,7 @@ ensure(ep, 'closest', function(selector) {
     do {
         if(node.matches(selector)) return node;
         //https://github.com/Financial-Times/polyfill-service/issues/1279
-        node = (node.tagName === 'svg') ? node.parentNode : node.parentElement;
+        node = dom.nodeName(node, 'svg') ? node.parentNode : node.parentElement;
     }
     while(node); 
 

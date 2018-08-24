@@ -9,6 +9,10 @@
             body {
                 font-family: sans-serif;
             }
+            
+            section {
+                margin-top: 1em;
+            }
 
             svg {
                 background: white;
@@ -65,15 +69,25 @@
             <h3>Drop an image</h3>
             <img />
         </section>
+        
+        <section id="drop-files">
+            <label>
+                <input type="file" multiple />
+            </label>
+            <pre></pre>
+        </section>
+        
 
         <script>
             /*global ABOUtils*/
             console.clear();
             (function() {
                 var ud = ABOUtils.DOM,
-                    $ = ud.$$1;
+                    $ = ud.$;
     
-                ud.createElement('h2#test.bada.bing', document.body).textContent = 'Hello world!';
+                var header = ud.createElement('h2#test.bada.bing');
+                header.textContent = 'Hello world!';
+                document.body.insertBefore(header, document.body.firstElementChild);
                 
                 var debug = ABOUtils.Debug;
                 debug.log2(45, [1,2], { a: 'Timed to console!' });
@@ -81,7 +95,21 @@
                 debug.log2(45, [1,2], { a: 'Timed to screen!' });
                 console.log(45, [1,2], { a: 'Untimed to screen!' });
                 
-                ud.dropImage($('#drop-file'), function(drop) { $('#drop-file img').src = drop.url; });
+                ud.dropImage($('#drop-file'), function(drop) {
+                    $('#drop-file img').src = drop.url;
+                });
+                
+                ud.dropFiles($('#drop-files input'), function(files) {
+                    $('#drop-files pre').textContent = files.map(function(f) { return f.file.name; }).join('\n');
+                });
+
+                var svg = ud.createElement('svg', document.body);
+                ud.createElement('circle', svg, {
+                    cx: 50,
+                    cy: 100,
+                    r: 60,
+                    fill: 'orangered',
+                });
             })();
         </script>
         <script src="test-geom.js"></script>

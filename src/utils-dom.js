@@ -12,6 +12,20 @@ function $$1(selector, context) {
     var element = context.querySelector(selector);
     return element;
 }
+const $ = $$1;
+
+function selectors() {
+    return [$, $$];
+}
+
+
+function nodeName(elm, name) {
+    //Element.nodeName/tagName is uppercase ..except when it's not:
+    //https://stackoverflow.com/questions/27223756/is-element-tagname-always-uppercase
+    if(elm && name) {
+        return (elm.nodeName.toLowerCase() === name.toLowerCase());
+    }
+}
 
 
 function createElement(tag, parent, attributes) {
@@ -37,9 +51,12 @@ function createElement(tag, parent, attributes) {
         }
     }
     
-    const element = parent
-            //Needed for SVG elements:
-            ? document.createElementNS(parent.namespaceURI, tag)
+    const namespace = (tag.toLowerCase() === 'svg')
+                            ? 'http://www.w3.org/2000/svg'
+                            //Needed for SVG elements:
+                            : parent ? parent.namespaceURI : null;
+    const element = namespace
+            ? document.createElementNS(namespace, tag)
             : document.createElement(tag);
 
     if(attributes) {
@@ -162,7 +179,7 @@ function dropFiles(target, callback, options) {
     //If we are intercepting a file input field, we use the `change`` event instead of drag/drop events.
     //That way we fetch the file both on drag/drop (built-in behavior for file input fields), 
     //and when a file is selected through the old-fashioned "Browse" button.
-    if((target.nodeName === 'INPUT') && (target.type === 'file')) {
+    if(nodeName(target, 'INPUT') && (target.type === 'file')) {
         addEvent(target, 'change', function(e) {
             const input = e.currentTarget;
             if (input.files) {
@@ -204,4 +221,4 @@ function dropImage(target, callback) {
 
 
 
-export { $$, $$1, createElement, relativeMousePos, addEvent, live, animate, dropFiles, dropFile, dropImage };
+export { $$, $,$$1, selectors, nodeName, createElement, relativeMousePos, addEvent, live, animate, dropFiles, dropFile, dropImage };

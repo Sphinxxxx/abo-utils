@@ -1,5 +1,5 @@
 /*!
- * abo-utils v0.3.1
+ * abo-utils v0.3.2
  * https://github.com/Sphinxxxx/abo-utils
  *
  * Copyright 2018 Andreas Borgen
@@ -10,6 +10,217 @@
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
     (factory((global.ABOUtils = {})));
 }(this, (function (exports) { 'use strict';
+
+
+    function $$(selector, context) {
+        context = context || document;
+        var elements = context.querySelectorAll(selector);
+        return Array.from(elements);
+    }
+    function $$1(selector, context) {
+        context = context || document;
+        var element = context.querySelector(selector);
+        return element;
+    }
+    var $ = $$1;
+
+    function selectors() {
+        return [$, $$];
+    }
+
+    function nodeName(elm, name) {
+        if (elm && name) {
+            return elm.nodeName.toLowerCase() === name.toLowerCase();
+        }
+    }
+
+    function createElement(tag, parent, attributes) {
+        var tagInfo = tag.split(/([#\.])/);
+        if (tagInfo.length > 1) {
+            tag = tagInfo[0] || 'div';
+
+            attributes = attributes || {};
+            for (var i = 1; i < tagInfo.length - 1; i++) {
+                var key = tagInfo[i],
+                    val = tagInfo[i + 1];
+
+                if (key === '#') {
+                    attributes.id = val;
+                } else {
+                    attributes.class = attributes.class ? attributes.class + ' ' + val : val;
+                }
+                i++;
+            }
+        }
+
+        var namespace = tag.toLowerCase() === 'svg' ? 'http://www.w3.org/2000/svg'
+        : parent ? parent.namespaceURI : null;
+        var element = namespace ? document.createElementNS(namespace, tag) : document.createElement(tag);
+
+        if (attributes) {
+            for (var _key in attributes) {
+                element.setAttribute(_key, attributes[_key]);
+            }
+        }
+
+        if (parent) {
+            parent.appendChild(element);
+        }
+        return element;
+    }
+
+    function relativeMousePos(mouseEvent, element, stayWithin) {
+        function respectBounds(value, min, max) {
+            return Math.max(min, Math.min(value, max));
+        }
+
+        var elmBounds = element.getBoundingClientRect();
+        var x = mouseEvent.clientX - elmBounds.left,
+            y = mouseEvent.clientY - elmBounds.top;
+
+        if (stayWithin) {
+            x = respectBounds(x, 0, elmBounds.width);
+            y = respectBounds(y, 0, elmBounds.height);
+        }
+
+        return [x, y];
+    }
+
+    function addEvent(target, type, handler) {
+        target.addEventListener(type, handler, false);
+    }
+
+    function live(eventType, elementQuerySelector, callback) {
+        document.addEventListener(eventType, function (e) {
+
+            var qs = $$(elementQuerySelector);
+            if (qs && qs.length) {
+
+                var el = e.target,
+                    index = -1;
+                while (el && (index = qs.indexOf(el)) === -1) {
+                    el = el.parentElement;
+                }
+
+                if (index > -1) {
+                    callback.call(el, e);
+                }
+            }
+        });
+    }
+
+    function animate(durationMS, callback, alternate) {
+        var startTime = void 0,
+            cancelled = void 0;
+        function anim(t) {
+            if (!startTime) {
+                startTime = t;
+            }
+
+            var totalProgress = (t - startTime) / durationMS;
+
+            var relProgress = totalProgress % 1;
+            if (alternate) {
+                var iteration = Math.trunc(totalProgress);
+                if (iteration % 2) {
+                    relProgress = 1 - relProgress;
+                }
+            }
+
+            callback(relProgress, totalProgress);
+            if (!cancelled) {
+                requestAnimationFrame(anim);
+            }
+        }
+        requestAnimationFrame(anim);
+
+        return {
+            cancel: function cancel() {
+                cancelled = true;
+            }
+        };
+    }
+
+    function dropFiles(target, callback, options) {
+        options = options || {};
+
+        var autoRevoke = options.autoRevoke !== false;
+        function handleFiles(files) {
+            if (!files) {
+                return;
+            }
+            files = Array.from(files);
+
+            var types = options.acceptedTypes;
+            if (types) {
+                files = files.filter(function (f) {
+                    return types.includes(f.type);
+                });
+            }
+            if (!files.length) {
+                return;
+            }
+
+            var results = files.map(processFile);
+            callback(results);
+        }
+        function processFile(file) {
+            var url = URL.createObjectURL(file);
+            return {
+                url: url,
+                file: file
+            };
+        }
+
+        if (nodeName(target, 'INPUT') && target.type === 'file') {
+            addEvent(target, 'change', function (e) {
+                var input = e.currentTarget;
+                if (input.files) {
+                    handleFiles(input.files);
+                }
+            });
+        } else {
+            addEvent(target, 'dragover', function (e) {
+                return e.preventDefault();
+            });
+            addEvent(target, 'drop', function (e) {
+                e.preventDefault();
+
+                var files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+        }
+    }
+    function singleFileProxy(callback) {
+        function proxy(results) {
+            callback(results[0]);
+        }
+        return proxy;
+    }
+    function dropFile(target, callback) {
+        dropFiles(target, singleFileProxy(callback));
+    }
+    function dropImage(target, callback) {
+        dropFiles(target, singleFileProxy(callback), {
+            acceptedTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/svg', 'image/svg+xml']
+        });
+    }
+
+    var utilsDom = Object.freeze({
+        $$: $$,
+        $: $,
+        $$1: $$1,
+        selectors: selectors,
+        nodeName: nodeName,
+        createElement: createElement,
+        relativeMousePos: relativeMousePos,
+        addEvent: addEvent,
+        live: live,
+        animate: animate,
+        dropFiles: dropFiles,
+        dropFile: dropFile,
+        dropImage: dropImage
+    });
 
 
     function ensure(obj, prop, fallback) {
@@ -59,7 +270,7 @@
         var node = this;
         do {
             if (node.matches(selector)) return node;
-            node = node.tagName === 'svg' ? node.parentNode : node.parentElement;
+            node = nodeName(node, 'svg') ? node.parentNode : node.parentElement;
         } while (node);
 
         return null;
@@ -196,202 +407,6 @@
         triangleArea: triangleArea,
         triangleIncircle: triangleIncircle,
         expandTriangle: expandTriangle
-    });
-
-
-    function $$(selector, context) {
-        context = context || document;
-        var elements = context.querySelectorAll(selector);
-        return Array.from(elements);
-    }
-    function $$1(selector, context) {
-        context = context || document;
-        var element = context.querySelector(selector);
-        return element;
-    }
-
-    function createElement(tag, parent, attributes) {
-        var tagInfo = tag.split(/([#\.])/);
-        if (tagInfo.length > 1) {
-            tag = tagInfo[0] || 'div';
-
-            attributes = attributes || {};
-            for (var i = 1; i < tagInfo.length - 1; i++) {
-                var key = tagInfo[i],
-                    val = tagInfo[i + 1];
-
-                if (key === '#') {
-                    attributes.id = val;
-                } else {
-                    attributes.class = attributes.class ? attributes.class + ' ' + val : val;
-                }
-                i++;
-            }
-        }
-
-        var element = parent
-        ? document.createElementNS(parent.namespaceURI, tag) : document.createElement(tag);
-
-        if (attributes) {
-            for (var _key in attributes) {
-                element.setAttribute(_key, attributes[_key]);
-            }
-        }
-
-        if (parent) {
-            parent.appendChild(element);
-        }
-        return element;
-    }
-
-    function relativeMousePos(mouseEvent, element, stayWithin) {
-        function respectBounds(value, min, max) {
-            return Math.max(min, Math.min(value, max));
-        }
-
-        var elmBounds = element.getBoundingClientRect();
-        var x = mouseEvent.clientX - elmBounds.left,
-            y = mouseEvent.clientY - elmBounds.top;
-
-        if (stayWithin) {
-            x = respectBounds(x, 0, elmBounds.width);
-            y = respectBounds(y, 0, elmBounds.height);
-        }
-
-        return [x, y];
-    }
-
-    function addEvent(target, type, handler) {
-        target.addEventListener(type, handler, false);
-    }
-
-    function live(eventType, elementQuerySelector, callback) {
-        document.addEventListener(eventType, function (e) {
-
-            var qs = $$(elementQuerySelector);
-            if (qs && qs.length) {
-
-                var el = e.target,
-                    index = -1;
-                while (el && (index = qs.indexOf(el)) === -1) {
-                    el = el.parentElement;
-                }
-
-                if (index > -1) {
-                    callback.call(el, e);
-                }
-            }
-        });
-    }
-
-    function animate(durationMS, callback, alternate) {
-        var startTime = void 0,
-            cancelled = void 0;
-        function anim(t) {
-            if (!startTime) {
-                startTime = t;
-            }
-
-            var totalProgress = (t - startTime) / durationMS;
-
-            var relProgress = totalProgress % 1;
-            if (alternate) {
-                var iteration = Math.trunc(totalProgress);
-                if (iteration % 2) {
-                    relProgress = 1 - relProgress;
-                }
-            }
-
-            callback(relProgress, totalProgress);
-            if (!cancelled) {
-                requestAnimationFrame(anim);
-            }
-        }
-        requestAnimationFrame(anim);
-
-        return {
-            cancel: function cancel() {
-                cancelled = true;
-            }
-        };
-    }
-
-    function dropFiles(target, callback, options) {
-        options = options || {};
-
-        var autoRevoke = options.autoRevoke !== false;
-        function handleFiles(files) {
-            if (!files) {
-                return;
-            }
-            files = Array.from(files);
-
-            var types = options.acceptedTypes;
-            if (types) {
-                files = files.filter(function (f) {
-                    return types.includes(f.type);
-                });
-            }
-            if (!files.length) {
-                return;
-            }
-
-            var results = files.map(processFile);
-            callback(results);
-        }
-        function processFile(file) {
-            var url = URL.createObjectURL(file);
-            return {
-                url: url,
-                file: file
-            };
-        }
-
-        if (target.nodeName === 'INPUT' && target.type === 'file') {
-            addEvent(target, 'change', function (e) {
-                var input = e.currentTarget;
-                if (input.files) {
-                    handleFiles(input.files);
-                }
-            });
-        } else {
-            addEvent(target, 'dragover', function (e) {
-                return e.preventDefault();
-            });
-            addEvent(target, 'drop', function (e) {
-                e.preventDefault();
-
-                var files = e.dataTransfer.files;
-                handleFiles(files);
-            });
-        }
-    }
-    function singleFileProxy(callback) {
-        function proxy(results) {
-            callback(results[0]);
-        }
-        return proxy;
-    }
-    function dropFile(target, callback) {
-        dropFiles(target, singleFileProxy(callback));
-    }
-    function dropImage(target, callback) {
-        dropFiles(target, singleFileProxy(callback), {
-            acceptedTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/svg', 'image/svg+xml']
-        });
-    }
-
-    var utilsDom = Object.freeze({
-        $$: $$,
-        $$1: $$1,
-        createElement: createElement,
-        relativeMousePos: relativeMousePos,
-        addEvent: addEvent,
-        live: live,
-        animate: animate,
-        dropFiles: dropFiles,
-        dropFile: dropFile,
-        dropImage: dropImage
     });
 
     var classCallCheck = function (instance, Constructor) {
