@@ -91,9 +91,9 @@
                 
                 var debug = ABOUtils.Debug;
                 debug.log2(45, [1,2], { a: 'Timed to console!' });
-                debug.logToScreen();
-                debug.log2(45, [1,2], { a: 'Timed to screen!' });
-                console.log(45, [1,2], { a: 'Untimed to screen!' });
+                //debug.logToScreen();
+                //debug.log2(45, [1,2], { a: 'Timed to screen!' });
+                //console.log(45, [1,2], { a: 'Untimed to screen!' });
                 
                 ud.dropImage($('#drop-file'), function(drop) {
                     $('#drop-file img').src = drop.url;
@@ -110,6 +110,17 @@
                     r: 60,
                     fill: 'orangered',
                 });
+                
+                console.log(
+                    '#text nodes',
+                    ud.walkNodeTree(document, {
+                        inspect: n => !['STYLE', 'SCRIPT'].includes(n.nodeName),
+                        collect: n => (n.nodeType === 3) && n.data.trim(),
+                        //callback: n => console.log(n.nodeName, n),
+                    })
+                    .map(n => JSON.stringify([n.parentNode.nodeName, n.data]))
+                );
+
             })();
         </script>
         <script src="test-geom.js"></script>

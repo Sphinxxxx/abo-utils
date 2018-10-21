@@ -1,5 +1,5 @@
 /*!
- * abo-utils v0.3.2
+ * abo-utils v0.3.3
  * https://github.com/Sphinxxxx/abo-utils
  *
  * Copyright 2018 Andreas Borgen
@@ -26,6 +26,36 @@
 
     function selectors() {
         return [$, $$];
+    }
+
+    function walkNodeTree(root, options) {
+        options = options || {};
+
+        var inspect = options.inspect || function (n) {
+            return true;
+        },
+            collect = options.collect || function (n) {
+            return true;
+        };
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL, {
+            acceptNode: function acceptNode(node) {
+                if (!inspect(node)) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+                if (!collect(node)) {
+                    return NodeFilter.FILTER_SKIP;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        });
+
+        var nodes = [];var n = void 0;
+        while (n = walker.nextNode()) {
+            options.callback && options.callback(n);
+            nodes.push(n);
+        }
+
+        return nodes;
     }
 
     function nodeName(elm, name) {
@@ -211,6 +241,7 @@
         $: $,
         $$1: $$1,
         selectors: selectors,
+        walkNodeTree: walkNodeTree,
         nodeName: nodeName,
         createElement: createElement,
         relativeMousePos: relativeMousePos,
@@ -517,7 +548,7 @@
             this.w = canvas.width = w || canvas.width;
             this.h = canvas.height = h || canvas.height;
             this.targetContext = canvas.getContext('2d');
-            this.targetData = this.targetContext.getImageData(0, 0, this.w, this.h);
+            this.sync();
         }
 
 
@@ -537,6 +568,19 @@
             key: 'render',
             value: function render() {
                 this.targetContext.putImageData(this.targetData, 0, 0);
+            }
+
+
+        }, {
+            key: 'sync',
+            value: function sync() {
+                this.targetData = this.targetContext.getImageData(0, 0, this.w, this.h);
+            }
+        }, {
+            key: 'clear',
+            value: function clear() {
+                this.targetContext.clearRect(0, 0, this.w, this.h);
+                this.sync();
             }
         }]);
         return CanvasPixelBuffer;

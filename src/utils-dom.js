@@ -1,4 +1,5 @@
 /*global URL*/
+/*global NodeFilter*/
 
 
 //https://codepen.io/michaelschofield/post/a-useful-function-for-making-queryselectorall-more-like-jquery
@@ -16,6 +17,34 @@ const $ = $$1;
 
 function selectors() {
     return [$, $$];
+}
+
+
+//https://stackoverflow.com/questions/10730309/find-all-text-nodes-in-html-page
+function walkNodeTree(root, options) {
+    options = options || {};
+
+    const inspect = options.inspect || (n => true),
+          collect = options.collect || (n => true);
+    const walker = document.createTreeWalker(
+        root,
+        NodeFilter.SHOW_ALL,
+        {
+            acceptNode: function(node) {
+                if(!inspect(node)) { return NodeFilter.FILTER_REJECT; }
+                if(!collect(node)) { return NodeFilter.FILTER_SKIP; }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }
+    );
+
+    const nodes = []; let n;
+    while(n = walker.nextNode()) {
+        options.callback && options.callback(n);
+        nodes.push(n);
+    }
+
+    return nodes;
 }
 
 
@@ -221,4 +250,4 @@ function dropImage(target, callback) {
 
 
 
-export { $$, $,$$1, selectors, nodeName, createElement, relativeMousePos, addEvent, live, animate, dropFiles, dropFile, dropImage };
+export { $$, $,$$1, selectors, walkNodeTree, nodeName, createElement, relativeMousePos, addEvent, live, animate, dropFiles, dropFile, dropImage };

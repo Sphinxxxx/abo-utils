@@ -99,7 +99,7 @@ class CanvasPixelBuffer {
         this.w = canvas.width  = (w || canvas.width);
         this.h = canvas.height = (h || canvas.height);
         this.targetContext = canvas.getContext('2d');
-        this.targetData    = this.targetContext.getImageData(0,0, this.w,this.h);
+        this.sync();
     }
 
     //http://stackoverflow.com/questions/13917139/fastest-way-to-iterate-pixels-in-a-canvas-and-copy-some-of-them-in-another-one
@@ -115,6 +115,16 @@ class CanvasPixelBuffer {
     
     render() {
         this.targetContext.putImageData(this.targetData, 0,0);
+    }
+    
+    //Useful if shapes are drawn using normal canvas methods.
+    sync() {
+        this.targetData = this.targetContext.getImageData(0,0, this.w,this.h);
+    }
+    
+    clear() {
+        this.targetContext.clearRect(0,0, this.w,this.h);
+        this.sync();
     }
 }
 
