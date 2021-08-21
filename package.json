@@ -1,6 +1,6 @@
 {
   "name": "abo-utils",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "JS utils and polyfills.",
   "author": "Andreas Borgen",
   "homepage": "https://github.com/Sphinxxxx/abo-utils",
@@ -19,7 +19,7 @@
     "dist/"
   ],
   "scripts": {
-    "prepublish": "bash ./scripts/prepub.sh",
+    "prepublishOnly": "bash ./scripts/prepub.sh",
     "postpublish": "bash ./scripts/postpub.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -6,13 +6,25 @@ function distance(p1, p2) {
 
 
 //https://stackoverflow.com/questions/2259476/rotating-a-point-about-another-point-2d
-function rotatePoint(p, radians) {
-    const x = p[0],
-          y = p[1],
-          cos = Math.cos(radians),
+function rotatePoint(p, radians, center) {
+    const cos = Math.cos(radians),
           sin = Math.sin(radians);
     
-    return [cos*x - sin*y, sin*x + cos*y];
+    let x = p[0],
+        y = p[1];
+    if(center) {
+        x -= center[0];
+        y -= center[1];
+    }
+
+    let newX = cos*x - sin*y,
+        newY = sin*x + cos*y;
+    if(center) {
+        newX += center[0];
+        newY += center[1];
+    }
+    
+    return [newX, newY];
 }
 
 
@@ -52,7 +64,19 @@ function angleBetween(p1, p2, p3) {
               b = squared(p2[0] - p3[0]) + squared(p2[1] - p3[1]),
               c = squared(p3[0] - p1[0]) + squared(p3[1] - p1[1]);
         
-        radians = Math.acos( (a+b-c) / Math.sqrt(4*a*b) );
+        const cos = (a + b - c) / Math.sqrt(4 * a * b);
+        //Rounding errors near 0° and 180° may cause an invalid cosine,
+        //e.g. [0,602.382], [0,598.339], [0,592.913] => -1.0000000000000002
+        //Handle these edge cases:
+        if(cos <= -1) {
+            radians = Math.PI;
+        }
+        else if(cos >= 1) {
+            radians = 0;
+        }
+        else {
+            radians = Math.acos(cos);
+        }
     }
 
     //console.log('findAngle:', p1, '->', p2, '->', p3, ':', radians);
